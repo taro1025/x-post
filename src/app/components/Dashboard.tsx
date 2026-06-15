@@ -157,7 +157,7 @@ export default function Dashboard() {
 
                             <div>
                                 <label className="block text-sm font-medium text-slate-400 mb-2">
-                                    What's happening?
+                                    What&apos;s happening?
                                 </label>
                                 <textarea
                                     value={content}

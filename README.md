@@ -1,14 +1,25 @@
-# X Schedule Post System (XPilot)
+# X Auto Operation Tool (XPilot)
 
-X（旧Twitter）への投稿を予約管理するためのシステムです。
+AIを活用してX（旧Twitter）の運用を支援する自動運用ツールです。
+Webサイトとして提供しつつ、将来的なiOSアプリ対応も見据えて開発します。
 Next.js, Prisma (SQLite), Tailwind CSSを使用し、無料で運用可能な構成（Vercel等の利用を想定）で作られています。
 
 ## 機能
 
+- **ネタのストック**: 投稿アイデアや素材を管理
+- **ネタの自動収集**: AI活用を前提にした投稿候補の収集
+- **ポストの自動生成**: ストックしたネタから投稿文を生成
 - **予約投稿**: 日時を指定して投稿を予約（15分刻み推奨）
 - **一覧表示**: 投稿予定（Upcoming）と履歴（History）の確認
 - **キャンセル**: 予約済み投稿の削除
 - **自動投稿**: Cron機能（API）による自動投稿実行
+- **複数アカウント運用**: 複数のXアカウント管理を想定
+
+## 開発方針
+
+- toC向けアプリとして、品質とUXに妥協しない
+- WebとiOSアプリの両方を見据え、モバイルで扱いやすい体験を重視する
+- YAGNI原則に従い、必要な機能から段階的に実装する
 
 ## セットアップ手順
 
@@ -69,7 +80,7 @@ npm run dev
 
 ## 技術スタック
 
-- **Framework**: Next.js 14 (App Router)
+- **Framework**: Next.js 16 (App Router)
 - **Language**: TypeScript
 - **Database**: SQLite (Prisma ORM)
 - **Styling**: Tailwind CSS
