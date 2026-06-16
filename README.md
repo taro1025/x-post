@@ -58,6 +58,11 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 OPENAI_API_KEY="your_openai_api_key"
 OPENAI_MODEL="gpt-5.5"
 
+# Basic Authentication (Optional)
+# 設定するとアプリ全体にBasic認証がかかります（/api/cronを除く）
+BASIC_AUTH_USER="admin"
+BASIC_AUTH_PASSWORD="your_secure_password"
+
 # Cron Job用シークレット (任意)
 CRON_SECRET="your_cron_secret"
 ```
