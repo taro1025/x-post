@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { TwitterApi } from 'twitter-api-v2';
+import { TwitterApi as XApiClient } from 'twitter-api-v2';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,12 +18,20 @@ function isUnauthorized(request: Request) {
     return Boolean(process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`);
 }
 
-function createTwitterClient() {
-    return new TwitterApi({
-        appKey: process.env.TWITTER_API_KEY!,
-        appSecret: process.env.TWITTER_API_SECRET!,
-        accessToken: process.env.TWITTER_ACCESS_TOKEN!,
-        accessSecret: process.env.TWITTER_ACCESS_SECRET!,
+type XEnvName = 'X_API_KEY' | 'X_API_SECRET' | 'X_ACCESS_TOKEN' | 'X_ACCESS_SECRET';
+
+function readXEnv(name: XEnvName) {
+    const value = process.env[name];
+    if (!value) throw new Error(`${name} is required`);
+    return value;
+}
+
+function createXClient() {
+    return new XApiClient({
+        appKey: readXEnv('X_API_KEY'),
+        appSecret: readXEnv('X_API_SECRET'),
+        accessToken: readXEnv('X_ACCESS_TOKEN'),
+        accessSecret: readXEnv('X_ACCESS_SECRET'),
     });
 }
 
@@ -46,7 +54,7 @@ async function markPostAsFailed(postId: string, error: unknown): Promise<PostRes
     return { id: postId, status: 'failed', error: message };
 }
 
-async function publishPost(client: TwitterApi, post: PendingPost): Promise<PostResult> {
+async function publishPost(client: XApiClient, post: PendingPost): Promise<PostResult> {
     try {
         await client.v2.tweet(post.content);
         await prisma.post.update({
@@ -60,7 +68,7 @@ async function publishPost(client: TwitterApi, post: PendingPost): Promise<PostR
     }
 }
 
-async function publishPendingPosts(client: TwitterApi, posts: PendingPost[]) {
+async function publishPendingPosts(client: XApiClient, posts: PendingPost[]) {
     const results: PostResult[] = [];
     for (const post of posts) {
         results.push(await publishPost(client, post));
@@ -77,7 +85,7 @@ export async function GET(request: Request) {
         if (pendingPosts.length === 0) {
             return NextResponse.json({ message: 'No pending posts' });
         }
-        const results = await publishPendingPosts(createTwitterClient(), pendingPosts);
+        const results = await publishPendingPosts(createXClient(), pendingPosts);
         return NextResponse.json({ processed: results.length, results });
     } catch (error: unknown) {
         console.error('Cron job failed:', error);

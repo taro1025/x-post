@@ -1,8 +1,8 @@
 # X Auto Operation Tool (XPilot)
 
-AIを活用してX（旧Twitter）の運用を支援する自動運用ツールです。
+AIを活用してXの運用を支援する自動運用ツールです。
 Webサイトとして提供しつつ、将来的なiOSアプリ対応も見据えて開発します。
-Next.js, Prisma (SQLite), Tailwind CSSを使用し、無料で運用可能な構成（Vercel等の利用を想定）で作られています。
+Next.js, Prisma (Postgres), Tailwind CSSを使用し、Vercel等で運用できる構成で作られています。
 
 ## 機能
 
@@ -28,7 +28,7 @@ Next.js, Prisma (SQLite), Tailwind CSSを使用し、無料で運用可能な構
 ### 1. 必要な環境
 
 - Node.js (v18以上推奨)
-- X (Twitter) Developer Account (API Key取得用)
+- X Developer Account (API Key取得用)
 
 ### 2. インストール
 
@@ -47,13 +47,13 @@ cp .env.example .env
 `.env.local` または `.env` に以下の情報を入力してください。
 
 ```ini
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://user:password@host:5432/xpost?sslmode=require"
 
-# X (Twitter) API Keys
-TWITTER_API_KEY="your_api_key"
-TWITTER_API_SECRET="your_api_key_secret"
-TWITTER_ACCESS_TOKEN="your_access_token"
-TWITTER_ACCESS_SECRET="your_access_token_secret"
+# X API Keys
+X_API_KEY="your_api_key"
+X_API_SECRET="your_api_key_secret"
+X_ACCESS_TOKEN="your_access_token"
+X_ACCESS_SECRET="your_access_token_secret"
 
 # OpenAI API
 OPENAI_API_KEY="your_openai_api_key"
@@ -62,6 +62,8 @@ OPENAI_MODEL="gpt-5.5"
 # Cron Job用シークレット (任意)
 CRON_SECRET="your_cron_secret"
 ```
+
+Vercelで使う場合、`DATABASE_URL` はNeon、Supabase、Prisma PostgresなどのPostgres接続URLを設定してください。SQLiteはVercelの本番永続DBとして使いません。
 
 ### 4. データベースのセットアップ
 
@@ -86,24 +88,35 @@ npm run dev
 
 AI生成案は自動では予約・投稿されません。誤投稿を防ぐため、必ずユーザーの確認と予約操作を挟みます。
 
+## X Developer Portal の設定
+
+このアプリは、自分のXアカウントとして投稿するために OAuth 1.0a User Context の `API Key and Secret` と `Access Token and Secret` を使います。`Bearer Token` は公開データの読み取り向けなので、投稿には使いません。
+
+1. X Developer Portalで対象Appを開き、`Settings` の `User authentication settings` を開きます。
+2. App permissionsを `Read and write` に変更します。投稿だけなら `Read, write, and DMs` は不要です。
+3. `Keys and tokens` を開き、`Consumer Keys` の `API Key and Secret` を `X_API_KEY` / `X_API_SECRET` に設定します。
+4. `Authentication Tokens` の `Access Token and Secret` を再生成し、`X_ACCESS_TOKEN` / `X_ACCESS_SECRET` に設定します。
+5. 画面に `Created with Read Only permissions` と出ているトークンは投稿に使えません。権限変更後に必ずAccess Token and Secretを再生成してください。
+6. Vercelに設定する場合は、Project SettingsのEnvironment Variablesに同じ4つの `X_*` 変数を登録し、再デプロイします。
+
 ## 自動投稿の設定 (Cron)
 
 本システムは `/api/cron` エンドポイントを定期的に叩くことで予約投稿を実行します。
 
 - **ローカル開発時**: 手動で `http://localhost:3000/api/cron` にアクセスするか、cronコマンド等で定期実行してください。
-- **本番環境 (Vercel)**: Vercel Cron Jobs を設定することで自動化可能です。
+- **本番環境 (Vercel)**: `vercel.json` で15分ごとに `/api/cron` を実行します。HobbyプランではCronの実行回数に制限があるため、15分ごとの運用はPro以上または外部Cronを使ってください。
 
 ## 技術スタック
 
 - **Framework**: Next.js 16 (App Router)
 - **Language**: TypeScript
-- **Database**: SQLite (Prisma ORM)
+- **Database**: Postgres (Prisma ORM)
 - **Styling**: Tailwind CSS
-- **Integration**: twitter-api-v2
+- **Integration**: X API via twitter-api-v2
 - **AI**: OpenAI Responses API
 
 ## トラブルシューティング
 
 - **DBエラー**: `.env` の `DATABASE_URL` が正しく設定されているか確認してください。
 - **AI生成失敗**: `OPENAI_API_KEY` が設定されているか、`OPENAI_MODEL` が利用可能なモデルか確認してください。
-- **投稿失敗**: X APIの権限範囲（Read/Write）やCredentialsが正しいか確認してください。Free TierではAPI制限が厳しいため注意が必要です。
+- **投稿失敗**: X APIの権限が `Read and write` か、`X_API_KEY` / `X_API_SECRET` / `X_ACCESS_TOKEN` / `X_ACCESS_SECRET` が正しいか確認してください。
