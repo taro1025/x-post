@@ -26,3 +26,10 @@ export type Notice = {
     type: 'success' | 'error' | 'info';
     message: string;
 } | null;
+
+export type TwitterAccount = {
+    id: string;
+    twitterId: string;
+    username: string;
+    createdAt: string;
+};

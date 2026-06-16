@@ -5,13 +5,14 @@ import {
     createPost,
     deletePost,
     generatePosts,
+    getAccounts,
     getAppProfile,
     getErrorText,
     getPosts,
     saveAppProfile,
 } from './api';
 import { getNextScheduleValue } from './date';
-import type { AppProfile, GeneratedPost, Notice, Post } from './types';
+import type { AppProfile, GeneratedPost, Notice, Post, TwitterAccount } from './types';
 
 const emptyProfile: AppProfile = {
     appName: '',
@@ -22,6 +23,29 @@ const emptyProfile: AppProfile = {
     landingUrl: '',
     updatedAt: null,
 };
+
+export function useAccounts(setNotice: (notice: Notice) => void) {
+    const [accounts, setAccounts] = useState<TwitterAccount[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const loadAccounts = useCallback(async () => {
+        setLoading(true);
+        try {
+            const data = await getAccounts();
+            setAccounts(data.accounts);
+        } catch (error) {
+            setNotice({ type: 'error', message: getErrorText(error) });
+        } finally {
+            setLoading(false);
+        }
+    }, [setNotice]);
+
+    useEffect(() => {
+        void loadAccounts();
+    }, [loadAccounts]);
+
+    return { accounts, loading, loadAccounts };
+}
 
 export function usePosts(setNotice: (notice: Notice) => void) {
     const [posts, setPosts] = useState<Post[]>([]);
@@ -108,12 +132,13 @@ export function useGeneratedPosts(setNotice: (notice: Notice) => void) {
 export function useSchedulePost(onCreated: () => Promise<void>, setNotice: (notice: Notice) => void) {
     const [content, setContent] = useState('');
     const [scheduledAt, setScheduledAt] = useState(getNextScheduleValue);
+    const [twitterAccountId, setTwitterAccountId] = useState('');
     const [loading, setLoading] = useState(false);
 
     const schedule = useCallback(async () => {
         setLoading(true);
         try {
-            await createPost({ content, scheduledAt });
+            await createPost({ content, scheduledAt, twitterAccountId });
             setContent('');
             setScheduledAt(getNextScheduleValue());
             setNotice({ type: 'success', message: '投稿を予約しました。' });
@@ -123,7 +148,7 @@ export function useSchedulePost(onCreated: () => Promise<void>, setNotice: (noti
         } finally {
             setLoading(false);
         }
-    }, [content, onCreated, scheduledAt, setNotice]);
+    }, [content, onCreated, scheduledAt, twitterAccountId, setNotice]);
 
-    return { content, scheduledAt, loading, setContent, setScheduledAt, schedule };
+    return { content, scheduledAt, twitterAccountId, loading, setContent, setScheduledAt, setTwitterAccountId, schedule };
 }

@@ -1,18 +1,30 @@
 'use client';
 
-import { FormEvent } from 'react';
+import { FormEvent, useEffect } from 'react';
 import { CalendarPlus, Clock } from 'lucide-react';
+import type { TwitterAccount } from './types';
 
 type Props = {
     content: string;
     scheduledAt: string;
     loading: boolean;
+    twitterAccountId: string;
+    accounts: TwitterAccount[];
     onContentChange: (value: string) => void;
     onScheduledAtChange: (value: string) => void;
+    onTwitterAccountIdChange: (value: string) => void;
     onSubmit: () => void;
 };
 
 export default function SchedulePostPanel(props: Props) {
+    const { accounts, twitterAccountId, onTwitterAccountIdChange } = props;
+
+    useEffect(() => {
+        if (accounts.length > 0 && !twitterAccountId) {
+            onTwitterAccountIdChange(accounts[0].id);
+        }
+    }, [accounts, twitterAccountId, onTwitterAccountIdChange]);
+
     const submit = (event: FormEvent) => {
         event.preventDefault();
         props.onSubmit();
@@ -24,6 +36,22 @@ export default function SchedulePostPanel(props: Props) {
                 <CalendarPlus size={18} className="text-emerald-600" /> 予約投稿
             </h2>
             <form onSubmit={submit} className="grid gap-3">
+                <label className="grid gap-1 text-sm font-medium text-neutral-700">
+                    投稿先アカウント
+                    <select
+                        className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                        value={props.twitterAccountId}
+                        onChange={(e) => props.onTwitterAccountIdChange(e.target.value)}
+                        required
+                    >
+                        <option value="">アカウントを連携・選択してください</option>
+                        {props.accounts.map((acc) => (
+                            <option key={acc.id} value={acc.id}>
+                                @{acc.username}
+                            </option>
+                        ))}
+                    </select>
+                </label>
                 <label className="grid gap-1 text-sm font-medium text-neutral-700">
                     投稿日時
                     <span className="relative">

@@ -1,6 +1,7 @@
 export type SchedulePostInput = {
     content: string;
     scheduledAt: string;
+    twitterAccountId: string;
 };
 
 function asRecord(value: unknown) {
@@ -22,6 +23,7 @@ export function parseSchedulePostInput(value: unknown): SchedulePostInput {
     return {
         content: readText(data, 'content'),
         scheduledAt: readText(data, 'scheduledAt'),
+        twitterAccountId: readText(data, 'twitterAccountId'),
     };
 }
 
@@ -31,5 +33,6 @@ export function validateSchedulePostInput(input: SchedulePostInput, now = new Da
     if (input.content.length > 280) return '投稿文は280文字以内で入力してください。';
     if (!scheduledAt) return '予約日時を正しく入力してください。';
     if (scheduledAt <= now) return '予約日時は現在より後にしてください。';
+    if (!input.twitterAccountId) return '投稿先のアカウントを選択してください。';
     return null;
 }

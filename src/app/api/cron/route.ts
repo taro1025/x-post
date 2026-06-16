@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { TwitterApi as XApiClient } from 'twitter-api-v2';
+import { createOAuth2Client } from '@/lib/twitter';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,29 +19,16 @@ function isUnauthorized(request: Request) {
     return Boolean(process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`);
 }
 
-type XEnvName = 'X_API_KEY' | 'X_API_SECRET' | 'X_ACCESS_TOKEN' | 'X_ACCESS_SECRET';
-
-function readXEnv(name: XEnvName) {
-    const value = process.env[name];
-    if (!value) throw new Error(`${name} is required`);
-    return value;
-}
-
-function createXClient() {
-    return new XApiClient({
-        appKey: readXEnv('X_API_KEY'),
-        appSecret: readXEnv('X_API_SECRET'),
-        accessToken: readXEnv('X_ACCESS_TOKEN'),
-        accessSecret: readXEnv('X_ACCESS_SECRET'),
-    });
-}
-
 async function getPendingPosts(now: Date) {
     return prisma.post.findMany({
         where: {
             scheduledAt: { lte: now },
             postedAt: null,
             failedAt: null,
+            twitterAccountId: { not: null },
+        },
+        include: {
+            twitterAccount: true,
         },
     });
 }
@@ -54,8 +42,32 @@ async function markPostAsFailed(postId: string, error: unknown): Promise<PostRes
     return { id: postId, status: 'failed', error: message };
 }
 
-async function publishPost(client: XApiClient, post: PendingPost): Promise<PostResult> {
+async function refreshAccountToken(account: NonNullable<PendingPost['twitterAccount']>) {
+    const oauthClient = createOAuth2Client();
+    if (!account.refreshToken) throw new Error('No refresh token available');
+    
+    const { client, accessToken, refreshToken, expiresIn } = await oauthClient.refreshOAuth2Token(account.refreshToken);
+    const expiresAt = new Date(Date.now() + expiresIn * 1000);
+    
+    await prisma.twitterAccount.update({
+        where: { id: account.id },
+        data: { accessToken, refreshToken, expiresAt },
+    });
+    
+    return client;
+}
+
+async function getClientForAccount(account: NonNullable<PendingPost['twitterAccount']>) {
+    if (account.expiresAt && account.expiresAt.getTime() <= Date.now() + 60000) {
+        return refreshAccountToken(account);
+    }
+    return new XApiClient(account.accessToken);
+}
+
+async function publishPost(post: PendingPost): Promise<PostResult> {
     try {
+        if (!post.twitterAccount) throw new Error('No Twitter account linked');
+        const client = await getClientForAccount(post.twitterAccount);
         await client.v2.tweet(post.content);
         await prisma.post.update({
             where: { id: post.id },
@@ -68,10 +80,10 @@ async function publishPost(client: XApiClient, post: PendingPost): Promise<PostR
     }
 }
 
-async function publishPendingPosts(client: XApiClient, posts: PendingPost[]) {
+async function publishPendingPosts(posts: PendingPost[]) {
     const results: PostResult[] = [];
     for (const post of posts) {
-        results.push(await publishPost(client, post));
+        results.push(await publishPost(post));
     }
     return results;
 }
@@ -85,7 +97,7 @@ export async function GET(request: Request) {
         if (pendingPosts.length === 0) {
             return NextResponse.json({ message: 'No pending posts' });
         }
-        const results = await publishPendingPosts(createXClient(), pendingPosts);
+        const results = await publishPendingPosts(pendingPosts);
         return NextResponse.json({ processed: results.length, results });
     } catch (error: unknown) {
         console.error('Cron job failed:', error);

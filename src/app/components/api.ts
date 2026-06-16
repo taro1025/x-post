@@ -37,15 +37,19 @@ export function getPosts() {
     return requestJson<Post[]>('/api/posts');
 }
 
-export function createPost(body: { content: string; scheduledAt: string }) {
+export function createPost(body: { content: string; scheduledAt: string; twitterAccountId: string }) {
     return requestJson<Post>('/api/posts', jsonOptions('POST', toPostPayload(body)));
 }
 
-function toPostPayload(body: { content: string; scheduledAt: string }) {
+function toPostPayload(body: { content: string; scheduledAt: string; twitterAccountId: string }) {
     return {
         ...body,
         scheduledAt: new Date(body.scheduledAt).toISOString(),
     };
+}
+
+export function getAccounts() {
+    return requestJson<{ accounts: import('./types').TwitterAccount[] }>('/api/accounts');
 }
 
 export function deletePost(id: string) {

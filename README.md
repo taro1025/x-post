@@ -49,11 +49,10 @@ cp .env.example .env
 ```ini
 DATABASE_URL="postgresql://user:password@host:5432/xpost?sslmode=require"
 
-# X API Keys
-X_API_KEY="your_api_key"
-X_API_SECRET="your_api_key_secret"
-X_ACCESS_TOKEN="your_access_token"
-X_ACCESS_SECRET="your_access_token_secret"
+# X OAuth 2.0 Client Keys
+X_CLIENT_ID="your_client_id"
+X_CLIENT_SECRET="your_client_secret"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
 # OpenAI API
 OPENAI_API_KEY="your_openai_api_key"
@@ -82,22 +81,23 @@ npm run dev
 ## 基本的な使い方
 
 1. **アプリ情報**に、広めたいiOSアプリの名前・ターゲット・価値訴求・URLを保存します。
-2. **AI下書き**で投稿テーマを任意入力し、投稿案を生成します。
-3. 使いたい案の「本文に入れる」を押し、投稿文を必要に応じて編集します。
-4. 投稿日時を指定して予約します。
+2. 画面右上の**Xアカウントを連携**ボタンから、OAuth 2.0でXアカウントを連携します（複数アカウント連携可能）。
+3. **AI下書き**で投稿テーマを任意入力し、投稿案を生成します。
+4. 使いたい案の「本文に入れる」を押し、投稿文を必要に応じて編集します。
+5. 投稿先アカウントと投稿日時を指定して予約します。
 
 AI生成案は自動では予約・投稿されません。誤投稿を防ぐため、必ずユーザーの確認と予約操作を挟みます。
 
 ## X Developer Portal の設定
 
-このアプリは、自分のXアカウントとして投稿するために OAuth 1.0a User Context の `API Key and Secret` と `Access Token and Secret` を使います。`Bearer Token` は公開データの読み取り向けなので、投稿には使いません。
+このアプリは、ユーザー自身または他のユーザーのXアカウントで投稿するために **OAuth 2.0 Authorization Code Flow with PKCE** を使います。
 
 1. X Developer Portalで対象Appを開き、`Settings` の `User authentication settings` を開きます。
-2. App permissionsを `Read and write` に変更します。投稿だけなら `Read, write, and DMs` は不要です。
-3. `Keys and tokens` を開き、`Consumer Keys` の `API Key and Secret` を `X_API_KEY` / `X_API_SECRET` に設定します。
-4. `Authentication Tokens` の `Access Token and Secret` を再生成し、`X_ACCESS_TOKEN` / `X_ACCESS_SECRET` に設定します。
-5. 画面に `Created with Read Only permissions` と出ているトークンは投稿に使えません。権限変更後に必ずAccess Token and Secretを再生成してください。
-6. Vercelに設定する場合は、Project SettingsのEnvironment Variablesに同じ4つの `X_*` 変数を登録し、再デプロイします。
+2. App permissionsを `Read and write` または必要に応じて `Read, write, and Direct message` に変更します。
+3. Type of Appで `Web App, Automated App or Bot` を選択します。
+4. App infoの Callback URI / Redirect URL に `http://localhost:3000/api/auth/twitter/callback` （本番の場合は本番のURL）を設定します。
+5. 保存すると `Client ID` と `Client Secret` が発行されるので、これらを `.env` の `X_CLIENT_ID` / `X_CLIENT_SECRET` に設定します。
+6. Vercelに設定する場合は、Project SettingsのEnvironment Variablesに同様の変数を登録し、再デプロイします。
 
 ## 自動投稿の設定 (Cron)
 

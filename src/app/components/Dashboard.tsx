@@ -8,7 +8,7 @@ import NoticeBanner from './NoticeBanner';
 import PostQueue from './PostQueue';
 import SchedulePostPanel from './SchedulePostPanel';
 import { getErrorText } from './api';
-import { useAppProfile, useGeneratedPosts, usePosts, useSchedulePost } from './hooks';
+import { useAccounts, useAppProfile, useGeneratedPosts, usePosts, useSchedulePost } from './hooks';
 import type { Notice } from './types';
 
 export default function Dashboard() {
@@ -18,6 +18,7 @@ export default function Dashboard() {
     const profile = useAppProfile(setNotice);
     const generated = useGeneratedPosts(setNotice);
     const schedule = useSchedulePost(queue.loadPosts, setNotice);
+    const accountsInfo = useAccounts(setNotice);
 
     const confirmDelete = async () => {
         if (!deleteId) return;
@@ -38,6 +39,17 @@ export default function Dashboard() {
                         <h1 className="text-2xl font-bold tracking-normal">XPilot</h1>
                         <p className="text-sm text-neutral-500">iOSアプリのXマーケ運用</p>
                     </div>
+                    <div className="flex items-center gap-3">
+                        <div className="text-sm text-neutral-600">
+                            連携済み: {accountsInfo.accounts.length}
+                        </div>
+                        <a
+                            href="/api/auth/twitter/login"
+                            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-800"
+                        >
+                            Xアカウントを連携
+                        </a>
+                    </div>
                 </header>
                 <NoticeBanner notice={notice} onDismiss={() => setNotice(null)} />
                 <div className="grid gap-5 lg:grid-cols-[minmax(0,420px)_1fr]">
@@ -50,8 +62,11 @@ export default function Dashboard() {
                             content={schedule.content}
                             scheduledAt={schedule.scheduledAt}
                             loading={schedule.loading}
+                            twitterAccountId={schedule.twitterAccountId}
+                            accounts={accountsInfo.accounts}
                             onContentChange={schedule.setContent}
                             onScheduledAtChange={schedule.setScheduledAt}
+                            onTwitterAccountIdChange={schedule.setTwitterAccountId}
                             onSubmit={schedule.schedule}
                         />
                         <PostQueue {...queue} onRefresh={queue.loadPosts} onDeleteClick={setDeleteId} />

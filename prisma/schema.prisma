@@ -7,14 +7,28 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model TwitterAccount {
+  id           String   @id @default(uuid())
+  twitterId    String   @unique
+  username     String
+  accessToken  String
+  refreshToken String?
+  expiresAt    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  posts        Post[]
+}
+
 model Post {
-  id          String    @id @default(uuid())
-  content     String
-  scheduledAt DateTime
-  postedAt    DateTime?
-  failedAt    DateTime?
-  error       String?
-  createdAt   DateTime  @default(now())
+  id               String          @id @default(uuid())
+  content          String
+  scheduledAt      DateTime
+  postedAt         DateTime?
+  failedAt         DateTime?
+  error            String?
+  createdAt        DateTime        @default(now())
+  twitterAccountId String?
+  twitterAccount   TwitterAccount? @relation(fields: [twitterAccountId], references: [id], onDelete: SetNull)
 }
 
 model AppProfile {

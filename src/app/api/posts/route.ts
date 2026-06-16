@@ -30,6 +30,7 @@ export async function POST(request: Request) {
             data: {
                 content: input.content,
                 scheduledAt: parseScheduleDate(input.scheduledAt)!,
+                twitterAccountId: input.twitterAccountId,
             },
         });
 
