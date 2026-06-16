@@ -1,0 +1,17 @@
+name: Vercel Cron Job
+
+on:
+  schedule:
+    # 10分ごとに実行 (必要に応じて間隔を変更してください)
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # GitHubの画面から手動で実行できるようにする
+
+jobs:
+  cron:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Vercel Cron API
+        run: |
+          curl -X GET "${{ secrets.CRON_API_URL }}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --fail
