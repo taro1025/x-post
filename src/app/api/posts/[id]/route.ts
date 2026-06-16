@@ -5,6 +5,10 @@ function getErrorMessage(error: unknown) {
     return error instanceof Error ? error.message : 'Unknown error';
 }
 
+function jsonError(message: string, status: number, details?: string) {
+    return NextResponse.json({ error: message, details }, { status });
+}
+
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const { id } = await params;
@@ -14,9 +18,6 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
         return NextResponse.json({ success: true });
     } catch (error: unknown) {
         console.error('Delete API Error:', error);
-        return NextResponse.json(
-            { error: 'Failed to delete post', details: getErrorMessage(error) },
-            { status: 500 },
-        );
+        return jsonError('予約投稿の削除に失敗しました。', 500, getErrorMessage(error));
     }
 }

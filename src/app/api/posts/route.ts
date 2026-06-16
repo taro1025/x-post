@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
+import { parseScheduleDate, parseSchedulePostInput, validateSchedulePostInput } from '@/lib/post-input';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
+
+function jsonError(message: string, status: number) {
+    return NextResponse.json({ error: message }, { status });
+}
 
 export async function GET() {
     try {
@@ -11,28 +16,26 @@ export async function GET() {
         return NextResponse.json(posts);
     } catch (error) {
         console.error('API Error:', error);
-        return NextResponse.json({ error: 'Failed to fetch posts' }, { status: 500 });
+        return jsonError('投稿一覧の取得に失敗しました。', 500);
     }
 }
 
 export async function POST(request: Request) {
     try {
-        const { content, scheduledAt } = await request.json();
-
-        if (!content || !scheduledAt) {
-            return NextResponse.json({ error: 'Content and scheduledAt are required' }, { status: 400 });
-        }
+        const input = parseSchedulePostInput(await request.json());
+        const validationError = validateSchedulePostInput(input);
+        if (validationError) return jsonError(validationError, 400);
 
         const post = await prisma.post.create({
             data: {
-                content,
-                scheduledAt: new Date(scheduledAt),
+                content: input.content,
+                scheduledAt: parseScheduleDate(input.scheduledAt)!,
             },
         });
 
         return NextResponse.json(post);
     } catch (error) {
         console.error('API Error:', error);
-        return NextResponse.json({ error: 'Failed to create post' }, { status: 500 });
+        return jsonError('予約投稿の作成に失敗しました。', 500);
     }
 }

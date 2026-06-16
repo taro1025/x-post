@@ -16,3 +16,15 @@ model Post {
   error       String?
   createdAt   DateTime  @default(now())
 }
+
+model AppProfile {
+  id               String   @id @default("default")
+  appName          String
+  targetAudience   String
+  valueProposition String
+  painPoints       String
+  tone             String   @default("親しみやすく誠実")
+  landingUrl       String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
